@@ -3,7 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import { 
   Bus, DollarSign, Wrench, Users, ShieldCheck, ExternalLink, 
   Phone, Radio, Search, Filter, AlertTriangle, CheckCircle2,
-  Plus, Edit3, X, Save, Trash2
+  Plus, Edit3, X, Save, Trash2, Fuel, TrendingUp, ShieldAlert, Award
 } from 'lucide-react';
 import Footer from '../components/Footer';
 
@@ -68,7 +68,21 @@ export default function AdminDashboard() {
     }
   ]);
 
-  // Form state for creating a new bus
+  // --- Feature 4: Fleet Expenses State ---
+  const [expenses, setExpenses] = useState([
+    { id: 1, busId: 'BUS-01', type: 'Fuel Fill-up', amount: 4500, date: '2026-07-28', liters: 50, notes: 'Indian Oil Chikodi' },
+    { id: 2, busId: 'BUS-02', type: 'Engine Service', amount: 6200, date: '2026-07-25', notes: 'Routine 10k km service' },
+    { id: 3, busId: 'BUS-04', type: 'Brake Maintenance', amount: 12500, date: '2026-07-20', notes: 'Brake pads replaced' },
+  ]);
+
+  // --- Feature 4: Vehicle Health State ---
+  const [fleetHealth] = useState([
+    { busId: 'BUS-01', driver: 'Ramesh Patil', fcExpiry: '2026-11-15', insuranceExpiry: '2026-09-30', avgSpeed: '38 km/h', rating: 4.9, status: 'Good' },
+    { busId: 'BUS-02', driver: 'Suresh Kumar', fcExpiry: '2026-08-10', insuranceExpiry: '2026-12-01', avgSpeed: '42 km/h', rating: 4.7, status: 'Warning' },
+    { busId: 'BUS-03', driver: 'Mahesh Kulkarni', fcExpiry: '2027-01-20', insuranceExpiry: '2026-10-15', avgSpeed: '36 km/h', rating: 4.8, status: 'Good' },
+  ]);
+
+  // Form states for creating a new bus
   const [newBus, setNewBus] = useState({
     id: '',
     regNo: '',
@@ -81,6 +95,13 @@ export default function AdminDashboard() {
     fuel: '100%',
     studentsCount: 0
   });
+
+  // Form states for adding fuel / service logs
+  const [expBusId, setExpBusId] = useState('BUS-01');
+  const [expType, setExpType] = useState('Fuel Fill-up');
+  const [expAmount, setExpAmount] = useState('');
+  const [expLiters, setExpLiters] = useState('');
+  const [expNotes, setExpNotes] = useState('');
 
   // Handle Adding New Bus
   const handleAddBus = (e) => {
@@ -103,6 +124,28 @@ export default function AdminDashboard() {
       fuel: '100%',
       studentsCount: 0
     });
+  };
+
+  // Handle Adding Fuel / Maintenance Log
+  const handleAddExpense = (e) => {
+    e.preventDefault();
+    if (!expAmount) return;
+
+    const newLog = {
+      id: Date.now(),
+      busId: expBusId,
+      type: expType,
+      amount: parseFloat(expAmount),
+      date: new Date().toISOString().split('T')[0],
+      liters: expLiters ? parseFloat(expLiters) : null,
+      notes: expNotes || '-'
+    };
+
+    setExpenses([newLog, ...expenses]);
+    setExpAmount('');
+    setExpLiters('');
+    setExpNotes('');
+    alert('Fleet expense log saved successfully!');
   };
 
   // Handle Direct Field Updates
@@ -132,6 +175,15 @@ export default function AdminDashboard() {
     if (filterStatus === 'ALL') return matchesSearch;
     return matchesSearch && bus.status === filterStatus;
   });
+
+  // Dynamic calculations for expenses
+  const totalFuelCost = expenses
+    .filter((e) => e.type === 'Fuel Fill-up')
+    .reduce((sum, e) => sum + e.amount, 0);
+
+  const totalMaintenanceCost = expenses
+    .filter((e) => e.type !== 'Fuel Fill-up')
+    .reduce((sum, e) => sum + e.amount, 0);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between font-sans selection:bg-amber-500 selection:text-slate-950">
@@ -205,7 +257,7 @@ export default function AdminDashboard() {
                 KLECET Fleet Control Desk
               </h2>
               <p className="text-slate-300 text-xs md:text-sm max-w-xl">
-                Add new buses, update route assignments, and modify driver parameters in real-time.
+                Add new buses, update route assignments, and track fuel expenses in real-time.
               </p>
             </div>
 
@@ -244,10 +296,10 @@ export default function AdminDashboard() {
           <div className="bg-slate-900/80 border border-slate-800/80 p-5 rounded-2xl backdrop-blur-sm space-y-1 shadow-xl">
             <div className="flex items-center justify-between">
               <DollarSign className="w-5 h-5 text-amber-400" />
-              <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">Fuel Budget</span>
+              <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">Total Spent</span>
             </div>
-            <span className="text-xs text-slate-400 font-medium block pt-2">Monthly Expenditure</span>
-            <span className="text-3xl font-black text-white">₹ 1.42 L</span>
+            <span className="text-xs text-slate-400 font-medium block pt-2">Fuel & Maintenance</span>
+            <span className="text-3xl font-black text-white">₹ {(totalFuelCost + totalMaintenanceCost).toLocaleString()}</span>
           </div>
 
           <div className="bg-slate-900/80 border border-slate-800/80 p-5 rounded-2xl backdrop-blur-sm space-y-1 shadow-xl">
@@ -427,6 +479,184 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* ⛽ FEATURE 4: FLEET ANALYTICS & FUEL EXPENSE MANAGEMENT */}
+        <div className="space-y-6 pt-4">
+          <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Fuel className="w-6 h-6 text-amber-500" /> Fuel Analytics & Maintenance Manager
+              </h3>
+              <p className="text-xs text-slate-400">
+                Record diesel fill-ups, service invoices, and review vehicle compliance status.
+              </p>
+            </div>
+            <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold rounded-xl flex items-center gap-1.5">
+              <DollarSign className="w-4 h-4" /> Fleet Total Spent: ₹{(totalFuelCost + totalMaintenanceCost).toLocaleString()}
+            </span>
+          </div>
+
+          {/* Form & Expense Table Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Add Log Form */}
+            <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-3xl space-y-4 shadow-xl">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <Plus className="w-4 h-4 text-amber-400" /> Record Fuel or Service Receipt
+              </h4>
+
+              <form onSubmit={handleAddExpense} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Select Bus ID</label>
+                  <select
+                    value={expBusId}
+                    onChange={(e) => setExpBusId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  >
+                    {fleetData.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.id} ({b.regNo})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Expense Type</label>
+                  <select
+                    value={expType}
+                    onChange={(e) => setExpType(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="Fuel Fill-up">Fuel Fill-up (Diesel)</option>
+                    <option value="Engine Service">Engine Service / Oil Change</option>
+                    <option value="Brake Maintenance">Brake & Tire Maintenance</option>
+                    <option value="Insurance Renewal">Insurance Renewal</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">Amount (₹)</label>
+                    <input
+                      type="number"
+                      required
+                      value={expAmount}
+                      onChange={(e) => setExpAmount(e.target.value)}
+                      placeholder="e.g. 4500"
+                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 font-mono"
+                    />
+                  </div>
+
+                  {expType === 'Fuel Fill-up' && (
+                    <div>
+                      <label className="block text-slate-400 font-semibold mb-1">Liters (L)</label>
+                      <input
+                        type="number"
+                        value={expLiters}
+                        onChange={(e) => setExpLiters(e.target.value)}
+                        placeholder="e.g. 50"
+                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 font-mono"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Receipt Ref / Notes</label>
+                  <input
+                    type="text"
+                    value={expNotes}
+                    onChange={(e) => setExpNotes(e.target.value)}
+                    placeholder="e.g. Indian Oil Pump Receipt #8821"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition-all shadow-lg shadow-amber-500/20 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4 stroke-[3]" /> Save Receipt Log
+                </button>
+              </form>
+            </div>
+
+            {/* Expense Receipts Table */}
+            <div className="lg:col-span-2 bg-slate-900/80 border border-slate-800 p-6 rounded-3xl space-y-4 shadow-xl">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-sky-400" /> Fleet Expense Receipts
+              </h4>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider">
+                    <tr>
+                      <th className="p-3 rounded-l-xl">Bus</th>
+                      <th className="p-3">Type</th>
+                      <th className="p-3">Date</th>
+                      <th className="p-3">Details</th>
+                      <th className="p-3 text-right rounded-r-xl">Amount (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60">
+                    {expenses.map((exp) => (
+                      <tr key={exp.id} className="hover:bg-slate-800/40 transition-colors">
+                        <td className="p-3 font-bold text-white">{exp.busId}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                            exp.type === 'Fuel Fill-up' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          }`}>
+                            {exp.type}
+                          </span>
+                        </td>
+                        <td className="p-3 font-mono text-slate-400">{exp.date}</td>
+                        <td className="p-3 text-slate-400">{exp.liters ? `${exp.liters} L diesel` : exp.notes}</td>
+                        <td className="p-3 text-right font-mono font-bold text-emerald-400">₹{exp.amount.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Vehicle Compliance & Driver Ratings Matrix */}
+          <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-3xl space-y-4 shadow-xl">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-emerald-400" /> Vehicle Health & Driver Compliance Score
+            </h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {fleetHealth.map((item, idx) => (
+                <div key={idx} className="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-sm text-white">{item.busId}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      item.status === 'Good' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                    }`}>
+                      {item.status === 'Good' ? 'Compliant' : 'Alert'}
+                    </span>
+                  </div>
+
+                  <div className="text-xs space-y-1 text-slate-400">
+                    <p><strong className="text-slate-200">Driver:</strong> {item.driver}</p>
+                    <p><strong className="text-slate-200">Fitness (FC):</strong> {item.fcExpiry}</p>
+                    <p><strong className="text-slate-200">Insurance:</strong> {item.insuranceExpiry}</p>
+                    <p><strong className="text-slate-200">Avg Speed:</strong> {item.avgSpeed}</p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
+                    <span className="text-slate-400">Safety Score:</span>
+                    <span className="font-bold text-amber-400">★ {item.rating} / 5.0</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
 
       </main>
